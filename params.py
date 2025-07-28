@@ -41,7 +41,7 @@ C4 = rhoCp_hnf / rhoCp_f
 C5 = sigma_hnf / sigma_f
 
 # Dimensionless parameters
-T1 = 350
+T1 = 310
 T2 = 300
 T_inf = 298
 

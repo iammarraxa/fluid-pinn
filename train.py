@@ -5,6 +5,7 @@ import torch.optim as optim
 from model import PINN
 from utils import gradients
 from params import C1, C2, C3, C4, C5, Pr, M, S, Sq, delta, lam
+from plots import plot_results
 
 device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 
@@ -60,4 +61,5 @@ for epoch in range(epochs):
 
     if epoch % 500 == 0:
         print(f"EPOCH {epoch} | LOSS = {loss.item():.4e}")
-        
+
+plot_results(net_f, net_thetha, device)
