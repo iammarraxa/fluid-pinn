@@ -4,6 +4,7 @@ import torch.optim as optim
 
 from model import PINN
 from utils import gradients
+from params import C1, C2, C3, C4, C5, Pr, M, S, Sq, delta, lam
 
 device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 
@@ -15,8 +16,7 @@ N = 100
 eta = torch.linspace(0, 1, N).view(-1, 1).to(device)
 eta.requires_grad = True
 
-C1, C2, C3, C4, C5 = 1, 1, 1, 1, 1
-Pr, Sq, M, S, lam, delta = 1, 1, 1, 1, 1, 1
+
 lr = 1e-3
 
 optimizer = optim.Adam(list(net_f.parameters()) + list(net_thetha.parameters()), lr)
