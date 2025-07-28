@@ -40,13 +40,16 @@ for epoch in range(epochs):
 
     loss_eq = torch.mean(eq1**2) + torch.mean(eq2**2)
 
-    f_0 = net_f(torch.tensor([[0.0]]).to(device))
-    f_1 = net_f(torch.tensor([[1.0]]).to(device))
-    f1_0 = gradients(f_0, torch.tensor([[0.0]], requires_grad=True).to(device))
-    f1_1 = gradients(f_1, torch.tensor([[1.0]], requires_grad=True).to(device))
+    eta_0 = torch.tensor([[0.0]], requires_grad=True).to(device)
+    eta_1 = torch.tensor([[1.0]], requires_grad=True).to(device)
 
-    thetha_0 = net_thetha(torch.tensor([[0.0]]).to(device))
-    thetha_1 = net_thetha(torch.tensor([[1.0]]).to(device))
+    f_0 = net_f(eta_0)
+    f_1 = net_f(eta_1)
+    f1_0 = gradients(f_0, eta_0)
+    f1_1 = gradients(f_1, eta_1)
+
+    thetha_0 = net_thetha(eta_0)
+    thetha_1 = net_thetha(eta_1)
 
     loss_bc = (f_0 - S)**2 + (f_1 - (Sq/2))**2 + (f1_0 - lam)**2 + (f1_1)**2 + (thetha_0 - delta)**2 + (thetha_1 - 1)**2
 
