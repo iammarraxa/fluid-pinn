@@ -51,5 +51,5 @@ def pde_loss_for_weights(w_flat, net_f, net_th, eta, device):
     mom_scale = torch.sqrt(torch.mean(r_mom.detach()**2) + 1e-12)
     eng_scale = torch.sqrt(torch.mean(r_eng.detach()**2) + 1e-12)
 
-    loss = torch.mean((r_mom / mom_scale)**2) + torch.mean((r_eng / eng_scale)**2)
+    loss = torch.mean(r_mom**2) + torch.mean(r_eng**2)
     return loss
