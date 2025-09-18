@@ -9,11 +9,11 @@ from params import S, Sq, lam, delta
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
 # Networks (sigmoid for paper-style smooth derivatives)
-net_f  = PINN([1, 32, 32, 1], activation="sigmoid").to(device)
-net_th = PINN([1, 32, 32, 1], activation="sigmoid").to(device)
+net_f  = PINN([1, 64, 64, 1], activation="sigmoid").to(device)
+net_th = PINN([1, 64, 64, 1], activation="sigmoid").to(device)
 
 # Collocation points
-N = 300
+N = 150
 eta = chebyshev_lobatto(N, device=device)
 
 # Flattened parameter vector
@@ -21,8 +21,7 @@ w0 = torch.cat([p.detach().view(-1) for p in list(net_f.parameters()) + list(net
 dim = w0.numel()
 
 # Objective wrapper for AOS (no grad)
-def objective_no_grad(w):
-    with torch.no_grad():
+def objective_for_aos(w):
         return pde_loss_for_weights(w, net_f, net_th, eta, device).item()
 
 # AOS bounds
@@ -30,8 +29,8 @@ lo = -5.0 * torch.ones(dim, device=device)
 hi =  5.0 * torch.ones(dim, device=device)
 
 # Run AOS
-aos = AOS(dim=dim, pop_size=30, pr_init=0.5, pr_final=0.1, iters=1500, device=device)
-w_best, f_best = aos.run((lo, hi), objective_no_grad)
+aos = AOS(dim=dim, pop_size=18, pr_init=0.5, pr_final=0.15, iters=600, device=device)
+w_best, f_best = aos.run((lo, hi), objective_for_aos)
 
 # Load best weights into networks
 set_model_weights(net_f,  w_best[:count_params(net_f)])

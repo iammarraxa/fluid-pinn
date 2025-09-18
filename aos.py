@@ -42,14 +42,14 @@ class AOS:
 
                 cand = torch.max(torch.min(cand, hi), lo)
 
-                f = objective(cand)
-                if f < fitness[i]:
+                f = float(objective(cand))
+                if f < float(fitness[i].item()):
                     pop[i] = cand
                     fitness[i] = f
 
                     if f < gbest_fit:
                         gbest = cand.clone()
-                        gbest_fit = f.item()
+                        gbest_fit = f
 
         return gbest, gbest_fit
 

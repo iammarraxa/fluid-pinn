@@ -16,8 +16,9 @@ def f_trial(eta, net_f):
 
 
 def theta_trial(eta, net_thetha):
-    NN_out = net_thetha(eta)
-    return delta + (1 - delta) * eta + eta**2 * (1 - eta)**2 * NN_out
+    base = delta*(1 - eta) + eta
+    core = net_thetha(eta)
+    return base + eta * (1 - eta) * core
 
 
 def pde_loss_for_weights(w_flat, net_f, net_th, eta, device):
@@ -28,7 +29,7 @@ def pde_loss_for_weights(w_flat, net_f, net_th, eta, device):
     set_model_weights(net_f, wf)
     set_model_weights(net_th, wt)
 
-    eta = eta.to(device)
+    eta = eta.to(device, dtype=next(net_f.parameters()).dtype)
     eta.requires_grad_(True)
 
     f  = f_trial(eta, net_f)
@@ -47,9 +48,9 @@ def pde_loss_for_weights(w_flat, net_f, net_th, eta, device):
     # Energy
     r_eng = inv_Pr_hat * th2 + f * th1 - 0.5*Sq * eta * th1
 
-    # Normalize
-    mom_scale = torch.sqrt(torch.mean(r_mom.detach()**2) + 1e-12)
-    eng_scale = torch.sqrt(torch.mean(r_eng.detach()**2) + 1e-12)
 
-    loss = torch.mean(r_mom**2) + torch.mean(r_eng**2)
+    mom_mse = torch.mean(r_mom**2)
+    eng_mse = torch.mean(r_eng**2)
+
+    loss = mom_mse + 2.0 * eng_mse
     return loss
