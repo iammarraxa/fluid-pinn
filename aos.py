@@ -1,60 +1,55 @@
 import torch
-import numpy as np
-from aos_loss import loss
-from utils import get_model_weights
 
-def aos(net_f, net_thetha, device, electrons=20, n_of_weights=100, d_f=100, iterations=100, seed=42):
-    np.random.seed(seed)
-    torch.manual_seed(seed)
+class AOS:
+    def __init__(self, dim, pop_size=20, pr_init=0.5, pr_final=0.1, iters=2000, device=None):
+        self.dim = dim
+        self.pop_size = pop_size
+        self.pr_init = pr_init
+        self.pr_final = pr_final
+        self.iters = iters
+        self.device = device or torch.device("cpu")
 
+    def _schedule_pr(self, t):
+        return self.pr_init + (self.pr_final - self.pr_init) * (t / max(1, self.iters-1))
 
-    X = np.random.uniform(-1, 1, (electrons, n_of_weights))
-    # E = np.array([loss(model, torch.tensor(x, dtype=torch.float32).to(device), device) for x  in X])
-    E = np.array([
-    loss(net_f, net_thetha, torch.tensor(x[:d_f], dtype=torch.float32).to(device), torch.tensor(x[d_f:], dtype=torch.float32).to(device), device) for x in X])
-    PR = 0.4
+    def run(self, bounds, objective):
+        lo, hi = bounds
+        pop = lo + (hi - lo) * torch.rand(self.pop_size, self.dim, device=self.device)
+        fitness = torch.empty(self.pop_size, device=self.device)
 
-    LE_idx = np.argmin(E)
-    LE = E[LE_idx]
-    X_LE = X[LE_idx]
+        for i in range(self.pop_size):
+            fitness[i] = objective(pop[i])
 
-    
-    alpha = np.random.rand(electrons)
-    beta = np.random.rand(electrons)
-    gamma = np.random.rand(electrons)
+        best_idx = torch.argmin(fitness)
+        gbest = pop[best_idx].clone()
+        gbest_fit = fitness[best_idx].item()
 
-    for k in range(iterations):
-        BS = np.mean(X, axis=0)
-        BE = np.mean(E)
-        r = np.random.uniform(0, 1, (electrons, n_of_weights))
+        step_lo, step_hi = 0.01*(hi-lo), 0.2*(hi-lo)
 
-        for i in range(electrons):
-            phi = np.random.rand()
-            Xi = X[i]
-            Ei = E[i]
+        for t in range(self.iters):
+            pr = self._schedule_pr(t)
+            step = step_hi + (step_lo - step_hi) * (t / max(1, self.iters-1))
 
-            if phi >= PR:
-                if Ei >= BE:
-                    Xi_new = Xi + (alpha[i] * (beta[i]*LE - gamma[i]*BS)) / (k+1)
+            center = 0.7*gbest + 0.3*pop.mean(dim=0)
+
+            for i in range(self.pop_size):
+                if torch.rand((), device=self.device) < pr:
+                    direction = torch.randn(self.dim, device=self.device)
+                    direction = direction / (torch.norm(direction) + 1e-9)
+                    cand = center + step * direction
                 else:
-                    Xi_new = Xi + (alpha[i] * (beta[i]*LE -gamma[i]*BS))
-            else:
-                Xi_new = Xi + r[i]
+                    cand = pop[i] + step * 0.5 * torch.randn(self.dim, device=self.device)
 
-            Xi_new = np.clip(Xi_new, -5, 5)
-            new_loss = loss(net_f, net_thetha, torch.tensor(Xi_new[:d_f], dtype=torch.float32).to(device), torch.tensor(Xi_new[d_f:], dtype=torch.float32).to(device), device)
+                cand = torch.max(torch.min(cand, hi), lo)
 
-            if new_loss < Ei:
-                X[i] = Xi_new
-                E[i] = new_loss
-                if new_loss < LE:
-                    LE = new_loss
-                    X_LE = Xi_new
-        
-        if k % 10 == 0:
-            print(f"Iteration {k} | Best Loss : {LE:.6f}")
-        
+                f = objective(cand)
+                if f < fitness[i]:
+                    pop[i] = cand
+                    fitness[i] = f
 
-    return torch.tensor(X_LE, dtype=torch.float32).to(device)
+                    if f < gbest_fit:
+                        gbest = cand.clone()
+                        gbest_fit = f.item()
 
+        return gbest, gbest_fit
 
