@@ -27,7 +27,7 @@ def compute_profiles(scenario : str, n_points = 401) -> dict :
     Nu = (-th1[0]).detach().item()
 
     return {"scenario" : scenario,
-            "η" : eta_list,
+            "eta" : eta_list,
             "fp" : fp_list,
-            "θ" : theta_list,
+            "theta" : theta_list,
             "wall" : {"cf" : cf, "Nu" : Nu}}
